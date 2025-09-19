@@ -109,6 +109,49 @@ app.get('/api/health', (req, res) => {
     });
 });
 
+// Seed admin data endpoint (for production setup)
+app.post('/api/seed-admins', async (req, res) => {
+    try {
+        // Check if admins already exist
+        const existingAdmins = await Admin.find({});
+        if (existingAdmins.length > 0) {
+            return res.json({
+                success: true,
+                message: 'Admins already exist',
+                count: existingAdmins.length
+            });
+        }
+
+        // Create default admins
+        const admins = [
+            {
+                username: 'admin',
+                password: 'admin123',
+                role: 'administrator'
+            },
+            {
+                username: 'harsh',
+                password: 'harsh123',
+                role: 'manager'
+            }
+        ];
+
+        await Admin.insertMany(admins);
+        
+        res.json({
+            success: true,
+            message: 'Admin data seeded successfully',
+            count: admins.length
+        });
+    } catch (error) {
+        console.error('Error seeding admins:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error seeding admin data'
+        });
+    }
+});
+
 // Serve the login page
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'login.html'));
