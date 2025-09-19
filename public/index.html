@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <div class="header-left">
+                    <h1>User Management System</h1>
+                    <p>Create, Read, Update, and Delete user records</p>
+                </div>
+                <div class="header-right">
+                    <div class="user-info">
+                        <span id="user-name">Welcome, Admin</span>
+                        <button id="logout-btn" class="logout-btn">Logout</button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <!-- Add/Edit User Form -->
+            <section class="form-section">
+                <h2 id="form-title">Add New User</h2>
+                <form id="user-form" class="user-form">
+                    <div class="form-group">
+                        <label for="firstName">First Name *</label>
+                        <input type="text" id="firstName" name="firstName" placeholder="Enter First Name" required>
+                        <span class="error" id="firstName-error"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="lastName">Last Name *</label>
+                        <input type="text" id="lastName" name="lastName" placeholder="Enter Last Name">
+                        <span class="error" id="lastName-error"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dob">Date of Birth</label>
+                        <input type="date" id="dob" name="dob">
+                        <span class="error" id="dob-error"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="anniversaryDate">Anniversary Date</label>
+                        <input type="date" id="anniversaryDate" name="anniversaryDate">
+                        <span class="error" id="anniversaryDate-error"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="mobileNumber">Mobile Number</label>
+                        <input type="tel" id="mobileNumber" name="mobileNumber" placeholder="7600004548">
+                        <span class="error" id="mobileNumber-error"></span>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" id="submit-btn">Add User</button>
+                        <button type="button" id="cancel-btn" style="display: none;">Cancel</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Users List -->
+            <section class="list-section">
+                <h2>Users List</h2>
+                
+                <!-- Filters Section -->
+                <div class="filters-container">
+                    <div class="search-container">
+                        <input type="text" id="search-input" placeholder="Search users...">
+                    </div>
+                    
+                    <div class="date-filters">
+                        <div class="filter-group">
+                            <label for="dob-filter">DOB (DD/MM):</label>
+                            <input type="text" id="dob-filter" class="date-filter" placeholder="e.g., 21/04" maxlength="5">
+                        </div>
+                        <div class="filter-group">
+                            <label for="anniversary-filter">Anniversary (DD/MM):</label>
+                            <input type="text" id="anniversary-filter" class="date-filter" placeholder="e.g., 15/03" maxlength="5">
+                        </div>
+                        <div class="filter-actions">
+                            <span id="filter-status" class="filter-status">Showing all users</span>
+                            <button type="button" id="clear-filters-btn" class="clear-filters-btn">Clear Filters</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="users-container">
+                    <div class="loading" id="loading">Loading users...</div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Success/Error Messages -->
+    <div id="message-container" class="message-container"></div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
