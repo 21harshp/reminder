@@ -342,7 +342,7 @@ function populateForm(user) {
     anniversaryDateInput.value = user.anniversaryDate || '';
     mobileNumberInput.value = user.mobileNumber || '';
     
-    editingUserId = user.id;
+    editingUserId = user._id;
     formTitle.textContent = 'Edit User';
     submitBtn.textContent = 'Update User';
     cancelBtn.style.display = 'inline-block';
@@ -388,8 +388,8 @@ function renderUsers() {
             <div class="user-header">
                 <div class="user-name">${user.firstName} ${user.lastName}</div>
                 <div class="user-actions">
-                    <button class="btn-edit" onclick="editUser(${user.id})">Edit</button>
-                    <button class="btn-delete" onclick="deleteUser(${user.id})">Delete</button>
+                    <button class="btn-edit" onclick="editUser('${user._id}')">Edit</button>
+                    <button class="btn-delete" onclick="deleteUser('${user._id}')">Delete</button>
                 </div>
             </div>
             <div class="user-details">
@@ -598,7 +598,7 @@ logoutBtn.addEventListener('click', logout);
 
 // Global functions for onclick handlers
 function editUser(userId) {
-    const user = users.find(u => u.id === userId);
+    const user = users.find(u => u._id === userId);
     if (user) {
         populateForm(user);
         // Scroll to form
