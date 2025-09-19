@@ -21,13 +21,19 @@ A full-stack web application for managing user records with Create, Read, Update
 ### Backend
 - **Node.js**: Runtime environment
 - **Express.js**: Web framework
+- **MongoDB**: NoSQL database with Mongoose ODM
 - **CORS**: Cross-origin resource sharing
 - **Body Parser**: JSON parsing middleware
+- **dotenv**: Environment variable management
 
 ### Frontend
 - **HTML5**: Semantic markup
 - **CSS3**: Modern styling with gradients and animations
 - **Vanilla JavaScript**: No frameworks, pure JavaScript
+
+### Database
+- **MongoDB Atlas**: Cloud database service
+- **Mongoose**: MongoDB object modeling for Node.js
 
 ## Installation & Setup
 
@@ -36,7 +42,33 @@ A full-stack web application for managing user records with Create, Read, Update
    npm install
    ```
 
-2. **Start the Server**
+2. **Set up MongoDB Database**
+   
+   **Option A: MongoDB Atlas (Recommended for Vercel)**
+   - Go to [MongoDB Atlas](https://www.mongodb.com/atlas)
+   - Create a free account and cluster
+   - Get your connection string
+   - Set the `MONGODB_URI` environment variable
+   
+   **Option B: Local MongoDB**
+   - Install MongoDB locally
+   - Start MongoDB service
+   - Update `.env` file with local connection string
+
+3. **Environment Variables**
+   Create a `.env` file in the root directory:
+   ```env
+   MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/crud-app
+   PORT=3001
+   NODE_ENV=development
+   ```
+
+4. **Seed Admin Data**
+   ```bash
+   npm run seed
+   ```
+
+5. **Start the Server**
    ```bash
    npm start
    ```
@@ -46,8 +78,8 @@ A full-stack web application for managing user records with Create, Read, Update
    npm run dev
    ```
 
-3. **Access the Application**
-   Open your browser and navigate to: `http://localhost:3000`
+6. **Access the Application**
+   Open your browser and navigate to: `http://localhost:3001`
 
 ## API Endpoints
 
@@ -162,10 +194,16 @@ This application is optimized for Vercel deployment:
 
 ### Important Notes for Vercel
 
-- **Data Persistence**: In Vercel's serverless environment, data is stored in memory and will reset on each deployment
-- **File System**: Vercel has a read-only filesystem, so JSON file operations are skipped in production
+- **Data Persistence**: Now uses MongoDB Atlas for persistent data storage
+- **Environment Variables**: Set `MONGODB_URI` in Vercel dashboard
 - **Sessions**: User sessions are stored in memory and will reset when the serverless function restarts
-- **For Production**: Consider using a database (MongoDB, PostgreSQL, etc.) for persistent data storage
+- **Database**: MongoDB Atlas provides reliable, scalable data storage
+
+### Vercel Environment Variables
+
+Set these in your Vercel dashboard:
+- `MONGODB_URI`: Your MongoDB Atlas connection string
+- `NODE_ENV`: production
 
 ### Default Login Credentials
 

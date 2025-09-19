@@ -3,6 +3,13 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const path = require('path');
 const fs = require('fs');
+const mongoose = require('mongoose');
+require('dotenv').config();
+
+// Import models
+const User = require('./models/User');
+const Admin = require('./models/Admin');
+const connectDB = require('./config/database');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -11,71 +18,11 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(bodyParser.json());
 
-// JSON file database
-const DATA_FILE = path.join(__dirname, 'data.json');
-const ADMIN_FILE = path.join(__dirname, 'admin.json');
-let users = [];
-let nextId = 1;
-let admins = [];
+// Session storage (in-memory for now, can be moved to Redis later)
 let sessions = {}; // Simple session storage
 
-// Load data from file
-function loadData() {
-    try {
-        if (fs.existsSync(DATA_FILE)) {
-            const data = fs.readFileSync(DATA_FILE, 'utf8');
-            const parsedData = JSON.parse(data);
-            users = parsedData.users || [];
-            nextId = parsedData.nextId || 1;
-        } else {
-            // Create initial data file
-            saveData();
-        }
-    } catch (error) {
-        console.error('Error loading data:', error);
-        users = [];
-        nextId = 1;
-    }
-}
-
-// Save data to file
-function saveData() {
-    try {
-        const data = {
-            users: users,
-            nextId: nextId,
-            lastUpdated: new Date().toISOString()
-        };
-        
-        // Check if we're in a Vercel environment (read-only filesystem)
-        if (process.env.VERCEL) {
-            console.log('Vercel environment detected - data not persisted to file');
-            return; // Skip file writing in Vercel
-        }
-        
-        fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
-    } catch (error) {
-        console.error('Error saving data:', error);
-        // Don't throw error in Vercel environment
-        if (!process.env.VERCEL) {
-            throw error;
-        }
-    }
-}
-
-// Load admin data
-function loadAdminData() {
-    try {
-        if (fs.existsSync(ADMIN_FILE)) {
-            const data = fs.readFileSync(ADMIN_FILE, 'utf8');
-            const parsedData = JSON.parse(data);
-            admins = parsedData.admins || [];
-        }
-    } catch (error) {
-        console.error('Error loading admin data:', error);
-        admins = [];
-    }
-}
+// Connect to MongoDB
+connectDB();
 
 // Authentication middleware
 function requireAuth(req, res, next) {
@@ -118,9 +65,7 @@ function generateSessionId() {
     return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 }
 
-// Load data on server start
-loadData();
-loadAdminData();
+// Database connection is handled by connectDB()
 
 // Validation helper function
 function validateUser(user) {
@@ -175,47 +120,59 @@ app.get('/dashboard', (req, res) => {
 });
 
 // Authentication routes
-app.post('/api/login', (req, res) => {
-    const { username, password } = req.body;
-    
-    if (!username || !password) {
-        return res.status(400).json({
-            success: false,
-            message: 'Username and password are required'
-        });
-    }
-    
-    const admin = admins.find(a => a.username === username && a.password === password);
-    
-    if (!admin) {
-        return res.status(401).json({
-            success: false,
-            message: 'Invalid credentials'
-        });
-    }
-    
-    const sessionId = generateSessionId();
-    
-    // Store session only if not in Vercel environment
-    if (!process.env.VERCEL) {
-        sessions[sessionId] = {
-            id: admin.id,
-            username: admin.username,
-            role: admin.role,
-            loginTime: new Date().toISOString()
-        };
-    }
-    
-    res.json({
-        success: true,
-        message: 'Login successful',
-        sessionId: sessionId,
-        user: {
-            id: admin.id,
-            username: admin.username,
-            role: admin.role
+app.post('/api/login', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        
+        if (!username || !password) {
+            return res.status(400).json({
+                success: false,
+                message: 'Username and password are required'
+            });
         }
-    });
+        
+        const admin = await Admin.findOne({ username: username, password: password });
+        
+        if (!admin) {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid credentials'
+            });
+        }
+        
+        // Update last login
+        admin.lastLogin = new Date();
+        await admin.save();
+        
+        const sessionId = generateSessionId();
+        
+        // Store session only if not in Vercel environment
+        if (!process.env.VERCEL) {
+            sessions[sessionId] = {
+                id: admin._id,
+                username: admin.username,
+                role: admin.role,
+                loginTime: new Date().toISOString()
+            };
+        }
+        
+        res.json({
+            success: true,
+            message: 'Login successful',
+            sessionId: sessionId,
+            user: {
+                id: admin._id,
+                username: admin.username,
+                role: admin.role
+            }
+        });
+    } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Login failed'
+        });
+    }
 });
 
 app.post('/api/logout', (req, res) => {
@@ -240,38 +197,63 @@ app.get('/api/auth/check', requireAuth, (req, res) => {
 });
 
 // GET all users (protected)
-app.get('/api/users', requireAuth, (req, res) => {
-    res.json({
-        success: true,
-        data: users
-    });
+app.get('/api/users', requireAuth, async (req, res) => {
+    try {
+        const users = await User.find({}).sort({ createdAt: -1 });
+        res.json({
+            success: true,
+            data: users
+        });
+    } catch (error) {
+        console.error('Error fetching users:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching users'
+        });
+    }
 });
 
 // GET user by ID (protected)
-app.get('/api/users/:id', requireAuth, (req, res) => {
-    const id = parseInt(req.params.id);
-    const user = users.find(u => u.id === id);
-    
-    if (!user) {
-        return res.status(404).json({
+app.get('/api/users/:id', requireAuth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid user ID'
+            });
+        }
+        
+        const user = await User.findById(id);
+        
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+        
+        res.json({
+            success: true,
+            data: user
+        });
+    } catch (error) {
+        console.error('Error fetching user:', error);
+        res.status(500).json({
             success: false,
-            message: 'User not found'
+            message: 'Error fetching user'
         });
     }
-    
-    res.json({
-        success: true,
-        data: user
-    });
 });
 
 // POST create new user (protected)
-app.post('/api/users', requireAuth, (req, res) => {
+app.post('/api/users', requireAuth, async (req, res) => {
     try {
-        const user = req.body;
+        const userData = req.body;
         
         // Validate user data
-        const errors = validateUser(user);
+        const errors = validateUser(userData);
         if (errors.length > 0) {
             return res.status(400).json({
                 success: false,
@@ -281,27 +263,33 @@ app.post('/api/users', requireAuth, (req, res) => {
         }
         
         // Create new user
-        const newUser = {
-            id: nextId++,
-            firstName: user.firstName.trim(),
-            lastName: user.lastName.trim(),
-            dob: user.dob || null,
-            anniversaryDate: user.anniversaryDate || null,
-            mobileNumber: user.mobileNumber || null,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-        };
+        const newUser = new User({
+            firstName: userData.firstName.trim(),
+            lastName: userData.lastName.trim(),
+            dob: userData.dob || null,
+            anniversaryDate: userData.anniversaryDate || null,
+            mobileNumber: userData.mobileNumber || null
+        });
         
-        users.push(newUser);
-        saveData(); // Save to file (will be skipped in Vercel)
+        const savedUser = await newUser.save();
         
         res.status(201).json({
             success: true,
             message: 'User created successfully',
-            data: newUser
+            data: savedUser
         });
     } catch (error) {
         console.error('Error creating user:', error);
+        
+        // Handle validation errors from MongoDB
+        if (error.name === 'ValidationError') {
+            return res.status(400).json({
+                success: false,
+                message: 'Validation failed',
+                errors: [error.message]
+            });
+        }
+        
         res.status(500).json({
             success: false,
             message: 'Error creating user'
@@ -310,22 +298,20 @@ app.post('/api/users', requireAuth, (req, res) => {
 });
 
 // PUT update user (protected)
-app.put('/api/users/:id', requireAuth, (req, res) => {
+app.put('/api/users/:id', requireAuth, async (req, res) => {
     try {
-        const id = parseInt(req.params.id);
-        const userIndex = users.findIndex(u => u.id === id);
+        const { id } = req.params;
+        const userData = req.body;
         
-        if (userIndex === -1) {
-            return res.status(404).json({
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({
                 success: false,
-                message: 'User not found'
+                message: 'Invalid user ID'
             });
         }
         
-        const user = req.body;
-        
         // Validate user data
-        const errors = validateUser(user);
+        const errors = validateUser(userData);
         if (errors.length > 0) {
             return res.status(400).json({
                 success: false,
@@ -334,26 +320,43 @@ app.put('/api/users/:id', requireAuth, (req, res) => {
             });
         }
         
-        // Update user
-        users[userIndex] = {
-            ...users[userIndex],
-            firstName: user.firstName.trim(),
-            lastName: user.lastName.trim(),
-            dob: user.dob || null,
-            anniversaryDate: user.anniversaryDate || null,
-            mobileNumber: user.mobileNumber || null,
-            updatedAt: new Date().toISOString()
-        };
+        const updatedUser = await User.findByIdAndUpdate(
+            id,
+            {
+                firstName: userData.firstName.trim(),
+                lastName: userData.lastName.trim(),
+                dob: userData.dob || null,
+                anniversaryDate: userData.anniversaryDate || null,
+                mobileNumber: userData.mobileNumber || null,
+                updatedAt: new Date()
+            },
+            { new: true, runValidators: true }
+        );
         
-        saveData(); // Save to file (will be skipped in Vercel)
+        if (!updatedUser) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
         
         res.json({
             success: true,
             message: 'User updated successfully',
-            data: users[userIndex]
+            data: updatedUser
         });
     } catch (error) {
         console.error('Error updating user:', error);
+        
+        // Handle validation errors from MongoDB
+        if (error.name === 'ValidationError') {
+            return res.status(400).json({
+                success: false,
+                message: 'Validation failed',
+                errors: [error.message]
+            });
+        }
+        
         res.status(500).json({
             success: false,
             message: 'Error updating user'
@@ -362,20 +365,25 @@ app.put('/api/users/:id', requireAuth, (req, res) => {
 });
 
 // DELETE user (protected)
-app.delete('/api/users/:id', requireAuth, (req, res) => {
+app.delete('/api/users/:id', requireAuth, async (req, res) => {
     try {
-        const id = parseInt(req.params.id);
-        const userIndex = users.findIndex(u => u.id === id);
+        const { id } = req.params;
         
-        if (userIndex === -1) {
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid user ID'
+            });
+        }
+        
+        const deletedUser = await User.findByIdAndDelete(id);
+        
+        if (!deletedUser) {
             return res.status(404).json({
                 success: false,
                 message: 'User not found'
             });
         }
-        
-        users.splice(userIndex, 1);
-        saveData(); // Save to file (will be skipped in Vercel)
         
         res.json({
             success: true,
