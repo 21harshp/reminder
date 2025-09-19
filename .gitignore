@@ -96,6 +96,6 @@ Thumbs.db
 logs
 *.log
 
-# Data files (optional - you might want to keep these)
-# data.json
-# admin.json
+# Data files (now using MongoDB)
+data.json
+admin.json
