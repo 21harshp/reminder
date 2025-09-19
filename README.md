@@ -5,12 +5,16 @@ A full-stack web application for managing user records with Create, Read, Update
 ## Features
 
 - **User Management**: Add, view, edit, and delete user records
+- **Authentication System**: Secure login/logout with session management
 - **Required Fields**: First Name and Last Name are mandatory
 - **Date Validation**: Either Date of Birth or Anniversary Date must be provided
+- **Mobile Number**: Optional field with WhatsApp integration
+- **Date Filtering**: Filter users by DOB or Anniversary Date (DD/MM format)
 - **Search Functionality**: Search users by first name or last name
 - **Responsive Design**: Works on desktop and mobile devices
 - **Real-time Validation**: Client-side and server-side validation
 - **Modern UI**: Clean and intuitive user interface
+- **Data Persistence**: JSON file storage for local development
 
 ## Technology Stack
 
@@ -145,6 +149,28 @@ npm run dev
 ```
 
 This requires the `nodemon` package to be installed globally or as a dev dependency.
+
+## Deployment
+
+### Vercel Deployment
+
+This application is optimized for Vercel deployment:
+
+1. **Push to GitHub**: Push your code to a GitHub repository
+2. **Connect to Vercel**: Import the repository in Vercel
+3. **Auto Deploy**: Vercel will automatically detect and deploy the Node.js application
+
+### Important Notes for Vercel
+
+- **Data Persistence**: In Vercel's serverless environment, data is stored in memory and will reset on each deployment
+- **File System**: Vercel has a read-only filesystem, so JSON file operations are skipped in production
+- **Sessions**: User sessions are stored in memory and will reset when the serverless function restarts
+- **For Production**: Consider using a database (MongoDB, PostgreSQL, etc.) for persistent data storage
+
+### Default Login Credentials
+
+- **Admin**: `admin` / `admin123`
+- **Manager**: `harsh` / `harsh123`
 
 ## License
 

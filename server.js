@@ -46,9 +46,20 @@ function saveData() {
             nextId: nextId,
             lastUpdated: new Date().toISOString()
         };
+        
+        // Check if we're in a Vercel environment (read-only filesystem)
+        if (process.env.VERCEL) {
+            console.log('Vercel environment detected - data not persisted to file');
+            return; // Skip file writing in Vercel
+        }
+        
         fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
     } catch (error) {
         console.error('Error saving data:', error);
+        // Don't throw error in Vercel environment
+        if (!process.env.VERCEL) {
+            throw error;
+        }
     }
 }
 
@@ -220,102 +231,127 @@ app.get('/api/users/:id', requireAuth, (req, res) => {
 
 // POST create new user (protected)
 app.post('/api/users', requireAuth, (req, res) => {
-    const user = req.body;
-    
-    // Validate user data
-    const errors = validateUser(user);
-    if (errors.length > 0) {
-        return res.status(400).json({
+    try {
+        const user = req.body;
+        
+        // Validate user data
+        const errors = validateUser(user);
+        if (errors.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Validation failed',
+                errors: errors
+            });
+        }
+        
+        // Create new user
+        const newUser = {
+            id: nextId++,
+            firstName: user.firstName.trim(),
+            lastName: user.lastName.trim(),
+            dob: user.dob || null,
+            anniversaryDate: user.anniversaryDate || null,
+            mobileNumber: user.mobileNumber || null,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+        
+        users.push(newUser);
+        saveData(); // Save to file (will be skipped in Vercel)
+        
+        res.status(201).json({
+            success: true,
+            message: 'User created successfully',
+            data: newUser
+        });
+    } catch (error) {
+        console.error('Error creating user:', error);
+        res.status(500).json({
             success: false,
-            message: 'Validation failed',
-            errors: errors
+            message: 'Error creating user'
         });
     }
-    
-    // Create new user
-    const newUser = {
-        id: nextId++,
-        firstName: user.firstName.trim(),
-        lastName: user.lastName.trim(),
-        dob: user.dob || null,
-        anniversaryDate: user.anniversaryDate || null,
-        mobileNumber: user.mobileNumber || null,
-        createdAt: new Date().toISOString()
-    };
-    
-    users.push(newUser);
-    saveData(); // Save to file
-    
-    res.status(201).json({
-        success: true,
-        message: 'User created successfully',
-        data: newUser
-    });
 });
 
 // PUT update user (protected)
 app.put('/api/users/:id', requireAuth, (req, res) => {
-    const id = parseInt(req.params.id);
-    const userIndex = users.findIndex(u => u.id === id);
-    
-    if (userIndex === -1) {
-        return res.status(404).json({
+    try {
+        const id = parseInt(req.params.id);
+        const userIndex = users.findIndex(u => u.id === id);
+        
+        if (userIndex === -1) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+        
+        const user = req.body;
+        
+        // Validate user data
+        const errors = validateUser(user);
+        if (errors.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Validation failed',
+                errors: errors
+            });
+        }
+        
+        // Update user
+        users[userIndex] = {
+            ...users[userIndex],
+            firstName: user.firstName.trim(),
+            lastName: user.lastName.trim(),
+            dob: user.dob || null,
+            anniversaryDate: user.anniversaryDate || null,
+            mobileNumber: user.mobileNumber || null,
+            updatedAt: new Date().toISOString()
+        };
+        
+        saveData(); // Save to file (will be skipped in Vercel)
+        
+        res.json({
+            success: true,
+            message: 'User updated successfully',
+            data: users[userIndex]
+        });
+    } catch (error) {
+        console.error('Error updating user:', error);
+        res.status(500).json({
             success: false,
-            message: 'User not found'
+            message: 'Error updating user'
         });
     }
-    
-    const user = req.body;
-    
-    // Validate user data
-    const errors = validateUser(user);
-    if (errors.length > 0) {
-        return res.status(400).json({
-            success: false,
-            message: 'Validation failed',
-            errors: errors
-        });
-    }
-    
-    // Update user
-    users[userIndex] = {
-        ...users[userIndex],
-        firstName: user.firstName.trim(),
-        lastName: user.lastName.trim(),
-        dob: user.dob || null,
-        anniversaryDate: user.anniversaryDate || null,
-        mobileNumber: user.mobileNumber || null,
-        updatedAt: new Date().toISOString()
-    };
-    
-    saveData(); // Save to file
-    
-    res.json({
-        success: true,
-        message: 'User updated successfully',
-        data: users[userIndex]
-    });
 });
 
 // DELETE user (protected)
 app.delete('/api/users/:id', requireAuth, (req, res) => {
-    const id = parseInt(req.params.id);
-    const userIndex = users.findIndex(u => u.id === id);
-    
-    if (userIndex === -1) {
-        return res.status(404).json({
+    try {
+        const id = parseInt(req.params.id);
+        const userIndex = users.findIndex(u => u.id === id);
+        
+        if (userIndex === -1) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+        
+        users.splice(userIndex, 1);
+        saveData(); // Save to file (will be skipped in Vercel)
+        
+        res.json({
+            success: true,
+            message: 'User deleted successfully'
+        });
+    } catch (error) {
+        console.error('Error deleting user:', error);
+        res.status(500).json({
             success: false,
-            message: 'User not found'
+            message: 'Error deleting user'
         });
     }
-    
-    users.splice(userIndex, 1);
-    saveData(); // Save to file
-    
-    res.json({
-        success: true,
-        message: 'User deleted successfully'
-    });
 });
 
 // Error handling middleware
