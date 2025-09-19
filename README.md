@@ -207,8 +207,8 @@ Set these in your Vercel dashboard:
 
 ### Default Login Credentials
 
-- **Admin**: `admin` / `admin123`
-- **Manager**: `harsh` / `harsh123`
+- **Admin**: `rohit` / `rohit1406`
+- **Manager**: `harsh` / `harsh2142`
 
 ## License
 

@@ -145,13 +145,18 @@ app.post('/api/seed-admins', async (req, res) => {
         // Create default admins
         const admins = [
             {
-                username: 'admin',
-                password: 'admin123',
+                username: 'rohit',
+                password: 'rohit1406',
                 role: 'administrator'
             },
             {
                 username: 'harsh',
-                password: 'harsh123',
+                password: 'harsh2142',
+                role: 'manager'
+            },
+            {
+                username: 'matangi',
+                password: 'harsh2142',
                 role: 'manager'
             }
         ];

@@ -141,11 +141,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Auto-fill demo credentials on double-click
 usernameInput.addEventListener('dblclick', () => {
-    usernameInput.value = 'admin';
-    passwordInput.value = 'admin123';
+    usernameInput.value = 'rohit';
+    passwordInput.value = 'rohit1406';
 });
 
 passwordInput.addEventListener('dblclick', () => {
-    usernameInput.value = 'manager';
-    passwordInput.value = 'manager123';
+    usernameInput.value = 'harsh';
+    passwordInput.value = 'harsh2142';
 });
