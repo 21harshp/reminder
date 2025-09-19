@@ -41,6 +41,31 @@ header {
     min-width: 300px;
 }
 
+.logo-section {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.logo {
+    height: 60px;
+    width: auto;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease;
+    object-fit: contain;
+    background: white;
+    padding: 5px;
+}
+
+.logo:hover {
+    transform: scale(1.05);
+}
+
+.logo-text {
+    flex: 1;
+}
+
 .header-right {
     flex-shrink: 0;
 }
@@ -510,6 +535,16 @@ button {
     
     header h1 {
         font-size: 2rem;
+    }
+    
+    .logo-section {
+        flex-direction: column;
+        text-align: center;
+        gap: 15px;
+    }
+    
+    .logo {
+        height: 50px;
     }
     
     .form-section, .list-section {
