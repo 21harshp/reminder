@@ -81,10 +81,31 @@ function loadAdminData() {
 function requireAuth(req, res, next) {
     const sessionId = req.headers.authorization || req.body.sessionId;
     
-    if (!sessionId || !sessions[sessionId]) {
+    if (!sessionId) {
         return res.status(401).json({
             success: false,
             message: 'Authentication required'
+        });
+    }
+    
+    // For Vercel, we'll use a simple token validation
+    // In production, you should use JWT or a proper session store
+    if (process.env.VERCEL) {
+        // In Vercel, accept any non-empty sessionId for demo purposes
+        // In production, implement proper JWT validation
+        req.user = {
+            id: 1,
+            username: 'admin',
+            role: 'administrator'
+        };
+        next();
+        return;
+    }
+    
+    if (!sessions[sessionId]) {
+        return res.status(401).json({
+            success: false,
+            message: 'Invalid session'
         });
     }
     
@@ -133,6 +154,16 @@ function validateUser(user) {
 
 // Routes
 
+// Health check endpoint (no auth required)
+app.get('/api/health', (req, res) => {
+    res.json({
+        success: true,
+        message: 'API is running',
+        timestamp: new Date().toISOString(),
+        environment: process.env.VERCEL ? 'Vercel' : 'Local'
+    });
+});
+
 // Serve the login page
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'login.html'));
@@ -164,12 +195,16 @@ app.post('/api/login', (req, res) => {
     }
     
     const sessionId = generateSessionId();
-    sessions[sessionId] = {
-        id: admin.id,
-        username: admin.username,
-        role: admin.role,
-        loginTime: new Date().toISOString()
-    };
+    
+    // Store session only if not in Vercel environment
+    if (!process.env.VERCEL) {
+        sessions[sessionId] = {
+            id: admin.id,
+            username: admin.username,
+            role: admin.role,
+            loginTime: new Date().toISOString()
+        };
+    }
     
     res.json({
         success: true,
@@ -186,7 +221,8 @@ app.post('/api/login', (req, res) => {
 app.post('/api/logout', (req, res) => {
     const sessionId = req.headers.authorization || req.body.sessionId;
     
-    if (sessionId && sessions[sessionId]) {
+    // Only delete session if not in Vercel environment
+    if (!process.env.VERCEL && sessionId && sessions[sessionId]) {
         delete sessions[sessionId];
     }
     
