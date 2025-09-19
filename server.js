@@ -109,6 +109,26 @@ app.get('/api/health', (req, res) => {
     });
 });
 
+// Test MongoDB connection endpoint
+app.get('/api/test-db', async (req, res) => {
+    try {
+        const adminCount = await Admin.countDocuments();
+        res.json({
+            success: true,
+            message: 'MongoDB connection working',
+            adminCount: adminCount,
+            mongoUri: process.env.MONGODB_URI ? 'Set' : 'Not set'
+        });
+    } catch (error) {
+        res.json({
+            success: false,
+            message: 'MongoDB connection failed',
+            error: error.message,
+            mongoUri: process.env.MONGODB_URI ? 'Set' : 'Not set'
+        });
+    }
+});
+
 // Seed admin data endpoint (for production setup)
 app.post('/api/seed-admins', async (req, res) => {
     try {
